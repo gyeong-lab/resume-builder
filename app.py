@@ -130,7 +130,7 @@ def generate():
         # Gemini API 호출
         full_prompt = f"{system_instruction}\n\n{prompt_content}"
         response = client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-3.5-flash-lite",
             contents=full_prompt
         )
 
