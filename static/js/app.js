@@ -31,6 +31,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const versionPills = document.getElementById("version-pills");
     const btnCompareView = document.getElementById("btn-compare-view");
 
+    // 모바일 퀵 네비게이션 제어 요소
+    const mBtnForm = document.getElementById("m-btn-form");
+    const mBtnResult = document.getElementById("m-btn-result");
+    const mResultBadge = document.getElementById("m-result-badge");
+    const sectionForm = document.getElementById("section-form");
+    const sectionResult = document.getElementById("section-result");
+
     const viewTabs = document.getElementById("view-tabs");
     const tabPreview = document.getElementById("tab-preview");
     const tabRaw = document.getElementById("tab-raw");
@@ -422,6 +429,15 @@ document.addEventListener("DOMContentLoaded", () => {
         setPanelDisplayMode("loading");
         submitBtn.disabled = true;
 
+        // 모바일 화면일 경우 로딩 진행 상태를 확인할 수 있도록 결과 패널로 자동 스크롤
+        if (window.innerWidth <= 768 && sectionResult) {
+            sectionResult.scrollIntoView({ behavior: "smooth", block: "start" });
+            if (mBtnResult) {
+                mBtnResult.classList.add("active");
+                if (mBtnForm) mBtnForm.classList.remove("active");
+            }
+        }
+
         const basePayload = {
             name: name,
             job_title: jobTitle,
@@ -461,6 +477,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 openComparisonView();
 
+                if (mResultBadge) {
+                    mResultBadge.classList.remove("hidden");
+                }
+                if (window.innerWidth <= 768 && sectionResult) {
+                    sectionResult.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+
             } else {
                 loadingTitle.textContent = "Gemini AI가 이력서를 작성하고 있습니다";
                 loadingDesc.textContent = "지원 직무에 최적화된 역량 키워드를 분석하여 문장을 다듬는 중입니다...";
@@ -479,6 +502,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 selectVersion(savedVersions.length - 1);
+
+                if (mResultBadge) {
+                    mResultBadge.classList.remove("hidden");
+                }
+                if (window.innerWidth <= 768 && sectionResult) {
+                    sectionResult.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
             }
 
         } catch (err) {
@@ -544,7 +574,52 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 12. 초기화 실행 (임시 저장 복원 및 이전 기록 드롭다운 채우기)
+    // 12. 모바일 전용 상단 퀵 네비게이션 동작 및 스크롤 동기화
+    if (mBtnForm && mBtnResult) {
+        mBtnForm.addEventListener("click", () => {
+            mBtnForm.classList.add("active");
+            mBtnResult.classList.remove("active");
+            if (sectionForm) {
+                sectionForm.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+
+        mBtnResult.addEventListener("click", () => {
+            mBtnResult.classList.add("active");
+            mBtnForm.classList.remove("active");
+            if (mResultBadge) {
+                mResultBadge.classList.add("hidden");
+            }
+            if (sectionResult) {
+                sectionResult.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+
+        // 사용자가 터치로 위아래 스크롤할 때 현재 보고 있는 패널에 맞게 네비 탭 활성화
+        if ("IntersectionObserver" in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.2) {
+                        if (entry.target.id === "section-form") {
+                            mBtnForm.classList.add("active");
+                            mBtnResult.classList.remove("active");
+                        } else if (entry.target.id === "section-result") {
+                            mBtnResult.classList.add("active");
+                            mBtnForm.classList.remove("active");
+                            if (mResultBadge) {
+                                mResultBadge.classList.add("hidden");
+                            }
+                        }
+                    }
+                });
+            }, { threshold: [0.2] });
+
+            if (sectionForm) observer.observe(sectionForm);
+            if (sectionResult) observer.observe(sectionResult);
+        }
+    }
+
+    // 13. 초기화 실행 (임시 저장 복원 및 이전 기록 드롭다운 채우기)
     restoreDraftFromStorage();
     updateProfilesDropdown();
 });

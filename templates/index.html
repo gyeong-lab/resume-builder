@@ -2,20 +2,26 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>AI Resume & Portfolio Builder</title>
-    <!-- 웹 폰트 (Pretendard) -->
+    <!-- 웹 폰트 (Pretendard 최적화) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- 마크다운 렌더링 라이브러리 (Marked.js) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- 외부 스타일시트 연결 -->
     <link rel="stylesheet" href="../static/css/style.css">
 </head>
 <body>
+    <!-- 모바일 전용 상단 퀵 네비게이션 바 -->
+    <nav class="mobile-nav-bar" id="mobile-nav">
+        <button type="button" class="mobile-nav-btn active" id="m-btn-form">✏️ 정보 입력</button>
+        <button type="button" class="mobile-nav-btn" id="m-btn-result">📄 생성 결과 <span id="m-result-badge" class="m-badge hidden">NEW</span></button>
+    </nav>
+
     <div class="app-wrapper">
-        <!-- [전면 리디자인] 프리미엄 히어로 헤더 영역 -->
+        <!-- [상단 헤더] 정돈된 프리미엄 딥 슬레이트 네이비 배너 -->
         <header class="app-header">
             <div class="header-hero">
                 <div class="brand-badge">
@@ -38,23 +44,23 @@
                 <!-- 주요 기능 퀵 뱃지 -->
                 <div class="hero-chips">
                     <span class="chip">🎯 STAR 역량 분석</span>
-                    <span class="chip">⚡ 초고속 AI 생성</span>
+                    <span class="chip">⚡ 초고속 AI 실시간 생성</span>
                     <span class="chip">🔀 A/B 버전 나란히 비교</span>
-                    <span class="chip">💾 마크다운 즉시 저장</span>
+                    <span class="chip">💾 자동 임시 저장 &amp; 불러오기</span>
                 </div>
             </div>
         </header>
 
-        <!-- 좌우 2단 분할 레이아웃 -->
-        <main class="main-layout">
+        <!-- 와이드 2단 분할 레이아웃 -->
+        <main class="main-layout" id="main-layout">
             <!-- [좌측 패널] 정보 입력 폼 -->
-            <section class="card left-card">
+            <section class="card left-card" id="section-form">
                 <div class="card-header">
                     <div class="header-left-group">
                         <h2>📝 지원자 정보 입력</h2>
                         <span class="step-indicator">Step 1 ~ 2</span>
                     </div>
-                    <!-- [신규] 이전 작성 기록 불러오기 & 초기화 -->
+                    <!-- 이전 작성 기록 불러오기 & 비우기 -->
                     <div class="history-controls">
                         <select id="saved-profiles-select" class="history-dropdown" title="이전에 작성했던 기록을 선택하면 자동으로 채워집니다">
                             <option value="">📂 이전 작성 기록 불러오기...</option>
@@ -129,7 +135,7 @@
                         </div>
                     </div>
 
-                    <!-- [신규 기능] A/B 동시 생성 및 비교 체크박스 -->
+                    <!-- A/B 동시 생성 및 비교 체크박스 -->
                     <div class="dual-gen-box">
                         <label class="checkbox-label">
                             <input type="checkbox" id="dual-generate">
@@ -154,8 +160,8 @@
                 </div>
             </section>
 
-            <!-- [우측 패널] 실시간 생성 결과 & 버전 비교 -->
-            <section class="card right-card">
+            <!-- [우측 패널] 와이드 실시간 생성 결과 & 버전 비교 -->
+            <section class="card right-card" id="section-result">
                 <div class="card-header">
                     <div class="header-title-group">
                         <h2>📄 생성 결과</h2>
@@ -165,7 +171,7 @@
                     <!-- 버전 선택 탭 & 나란히 비교 버튼 -->
                     <div id="version-tabs-container" class="version-tabs-group hidden">
                         <div class="version-pills" id="version-pills"></div>
-                        <button type="button" id="btn-compare-view" class="tab-btn compare-pill">🔀 나란히 비교</button>
+                        <button type="button" id="btn-compare-view" class="compare-pill">🔀 나란히 비교</button>
                     </div>
 
                     <!-- 뷰 모드 탭 (단일 보기일 때) -->
@@ -192,7 +198,7 @@
                         </div>
                     </div>
                     <h3>결과물이 여기에 표시됩니다</h3>
-                    <p>좌측에서 정보를 입력하고 <strong>[생성하기]</strong>를 누르면 AI가 이력서를 완성합니다.<br>생성할 때마다 버전이 차곡차곡 보관되어 <strong>좌우로 나란히 비교</strong>할 수 있습니다!</p>
+                    <p>좌측에서 정보를 입력하고 <strong>[생성하기]</strong>를 누르면 AI가 맞춤 이력서를 완성합니다.<br>생성할 때마다 버전이 차곡차곡 보관되어 <strong>좌우로 나란히 비교</strong>할 수 있습니다!</p>
                     <div class="tip-banner">
                         <span class="tip-label">TIP</span>
                         <span>[⚡ A/B 두 버전 한 번에 생성하기]를 체크하시면 표준형과 전문가형을 한 번에 비교할 수 있습니다!</span>
@@ -249,7 +255,7 @@
 
         <!-- 푸터 -->
         <footer class="app-footer">
-            <p>© 2026 AI Resume & Portfolio Builder · Built with Google Gemini & Flask</p>
+            <p>© 2026 AI Resume & Portfolio Builder · Built with Google Gemini &amp; Flask</p>
         </footer>
     </div>
 
