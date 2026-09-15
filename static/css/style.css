@@ -26,10 +26,17 @@ body {
     margin: 0 auto;
 }
 
-/* 3. 헤더 영역 */
+/* 3. [전면 리뉴얼] 프리미엄 히어로 헤더 영역 */
 .app-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
+    padding: 36px 24px 28px;
+    background: radial-gradient(ellipse at 50% -20%, rgba(99, 102, 241, 0.25) 0%, rgba(241, 245, 249, 0.8) 50%, #ffffff 100%);
+    border-radius: 20px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+    position: relative;
+    overflow: hidden;
 }
 
 .brand-badge {
@@ -37,34 +44,109 @@ body {
     align-items: center;
     gap: 8px;
     padding: 6px 14px;
-    background: #eef2ff;
-    color: #4f46e5;
-    border-radius: 9999px;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.9);
     border: 1px solid #e0e7ff;
+    border-radius: 9999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #4338ca;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+    margin-bottom: 14px;
 }
 
-.badge-dot {
-    width: 8px;
-    height: 8px;
+.badge-sparkle {
+    font-size: 14px;
+}
+
+.badge-status-dot {
+    width: 7px;
+    height: 7px;
     background-color: #10b981;
     border-radius: 50%;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    animation: livePulse 2s infinite;
 }
 
-.app-title {
-    font-size: 30px;
-    font-weight: 800;
+@keyframes livePulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+    70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.badge-status {
+    font-size: 11.5px;
+    color: #059669;
+    font-weight: 700;
+}
+
+/* 메인 타이틀: 그라데이션 타이포그래피 */
+.hero-title {
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    margin-bottom: 12px;
+    line-height: 1.25;
+}
+
+.title-plain {
     color: #0f172a;
-    letter-spacing: -0.5px;
-    margin-bottom: 6px;
 }
 
-.app-subtitle {
-    font-size: 14px;
-    color: #64748b;
+.title-gradient {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 45%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+/* 서브타이틀 */
+.hero-subtitle {
+    font-size: 15px;
+    color: #475569;
+    max-width: 680px;
+    margin: 0 auto 20px;
+    line-height: 1.65;
+}
+
+.hero-subtitle strong {
+    color: #1e293b;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .desktop-br {
+        display: none;
+    }
+    .hero-title {
+        font-size: 28px;
+    }
+}
+
+/* 주요 기능 퀵 칩스 */
+.hero-chips {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 5px 12px;
+    border-radius: 9999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+}
+
+.chip:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
 }
 
 /* 4. 메인 2단 분할 레이아웃 (Grid) */
