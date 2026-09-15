@@ -1,0 +1,23 @@
+# Python 가상환경
+venv/
+env/
+ENV/
+
+# 환경변수 및 보안 키 (API 키 유출 방지)
+.env
+*api*.txt
+*key*.txt
+
+# Python 캐시 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 운영체제 생성 파일
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# IDE 설정 파일
+.vscode/
+.idea/
