@@ -1,7 +1,8 @@
 /**
  * ==========================================================
  * AI Resume & Portfolio Builder - 프론트엔드 스크립트 (app.js)
- * 버전 보관, A/B 동시 생성 및 좌우 나란히 비교(Split Compare) 지원
+ * 자동 임시 저장(Draft), 이전 작성 기록(Profiles) 보관 및 선택,
+ * A/B 동시 생성 및 좌우 나란히 비교(Split Compare) 지원
  * ==========================================================
  */
 
@@ -12,6 +13,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const dualGenCheckbox = document.getElementById("dual-generate");
     const errorBox = document.getElementById("error-box");
     const errorMessage = document.getElementById("error-message");
+
+    // 폼 입력 필드
+    const nameInput = document.getElementById("name");
+    const jobTitleInput = document.getElementById("job-title");
+    const experienceInput = document.getElementById("experience");
+    const projectsInput = document.getElementById("projects");
+    const toneSelect = document.getElementById("tone");
+
+    // 이전 작성 기록 제어 요소
+    const savedProfilesSelect = document.getElementById("saved-profiles-select");
+    const btnResetForm = document.getElementById("btn-reset-form");
 
     // 우측 패널 상태 요소
     const statusPill = document.getElementById("status-pill");
@@ -63,7 +75,152 @@ document.addEventListener("DOMContentLoaded", () => {
         errorBox.classList.add("hidden");
     }
 
-    // 3. 마크다운 변환 렌더링 함수
+    // 3. 🌟 [기능 1] 실시간 자동 임시 저장 (Auto-Save Draft) 🌟
+    function saveDraftToStorage() {
+        const promptType = document.querySelector('input[name="prompt_type"]:checked')?.value || "B";
+        const draft = {
+            name: nameInput.value,
+            jobTitle: jobTitleInput.value,
+            experience: experienceInput.value,
+            projects: projectsInput.value,
+            tone: toneSelect.value,
+            promptType: promptType,
+            dualGen: dualGenCheckbox.checked
+        };
+        try {
+            localStorage.setItem("resume_builder_draft", JSON.stringify(draft));
+        } catch (e) {
+            console.warn("로컬 스토리지 저장 실패:", e);
+        }
+    }
+
+    // 폼 입력 시 자동 임시 저장 트리거
+    [nameInput, jobTitleInput, experienceInput, projectsInput, toneSelect].forEach(el => {
+        el.addEventListener("input", saveDraftToStorage);
+        el.addEventListener("change", saveDraftToStorage);
+    });
+    dualGenCheckbox.addEventListener("change", saveDraftToStorage);
+    document.querySelectorAll('input[name="prompt_type"]').forEach(r => {
+        r.addEventListener("change", saveDraftToStorage);
+    });
+
+    // 페이지 로드 시 임시 저장된 내용 자동 복원
+    function restoreDraftFromStorage() {
+        try {
+            const rawDraft = localStorage.getItem("resume_builder_draft");
+            if (rawDraft) {
+                const draft = JSON.parse(rawDraft);
+                if (draft.name) nameInput.value = draft.name;
+                if (draft.jobTitle) jobTitleInput.value = draft.jobTitle;
+                if (draft.experience) experienceInput.value = draft.experience;
+                if (draft.projects) projectsInput.value = draft.projects;
+                if (draft.tone) toneSelect.value = draft.tone;
+                if (draft.promptType) {
+                    const radio = document.querySelector(`input[name="prompt_type"][value="${draft.promptType}"]`);
+                    if (radio) radio.checked = true;
+                }
+                if (typeof draft.dualGen === "boolean") {
+                    dualGenCheckbox.checked = draft.dualGen;
+                }
+            }
+        } catch (e) {
+            console.warn("임시 저장 내용 복원 실패:", e);
+        }
+    }
+
+    // 4. 🌟 [기능 2] 이전 작성 기록(Profiles) 보관 및 드롭다운 선택 🌟
+    function getStoredProfiles() {
+        try {
+            const raw = localStorage.getItem("resume_builder_profiles");
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveProfileHistory(profile) {
+        try {
+            let profiles = getStoredProfiles();
+            // 중복 검사 (이름과 직무가 같으면 기존 것 제거 후 최신으로 등록)
+            profiles = profiles.filter(p => !(p.name === profile.name && p.jobTitle === profile.jobTitle));
+            profiles.unshift(profile); // 최신 것을 맨 앞으로
+            if (profiles.length > 10) profiles = profiles.slice(0, 10); // 최대 10개 보관
+            localStorage.setItem("resume_builder_profiles", JSON.stringify(profiles));
+            updateProfilesDropdown();
+        } catch (e) {
+            console.warn("프로필 목록 저장 실패:", e);
+        }
+    }
+
+    function updateProfilesDropdown() {
+        const profiles = getStoredProfiles();
+        savedProfilesSelect.innerHTML = "";
+
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = profiles.length > 0 ? `📂 이전 작성 기록 (${profiles.length}개)...` : "📂 이전 작성 기록 없음";
+        savedProfilesSelect.appendChild(defaultOption);
+
+        profiles.forEach((p, idx) => {
+            const opt = document.createElement("option");
+            opt.value = idx;
+            const timeStr = p.savedAt ? p.savedAt.slice(5, 16) : "";
+            opt.textContent = `${p.name} - ${p.jobTitle} ${timeStr ? `(${timeStr})` : ""}`;
+            savedProfilesSelect.appendChild(opt);
+        });
+    }
+
+    // 드롭다운에서 이전 기록 선택 시 폼에 자동 입력
+    savedProfilesSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        if (val === "") return;
+
+        const profiles = getStoredProfiles();
+        const selected = profiles[parseInt(val, 10)];
+        if (!selected) return;
+
+        nameInput.value = selected.name || "";
+        jobTitleInput.value = selected.jobTitle || "";
+        experienceInput.value = selected.experience || "";
+        projectsInput.value = selected.projects || "";
+        if (selected.tone) toneSelect.value = selected.tone;
+        if (selected.promptType) {
+            const radio = document.querySelector(`input[name="prompt_type"][value="${selected.promptType}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        saveDraftToStorage(); // 불러온 내용도 임시 저장에 동기화
+        savedProfilesSelect.value = ""; // 드롭다운 기본값으로 리셋
+
+        // 불러오기 완료 피드백
+        const originalText = btnResetForm.textContent;
+        btnResetForm.textContent = "✅ 불러옴!";
+        setTimeout(() => {
+            btnResetForm.textContent = originalText;
+        }, 1500);
+    });
+
+    // 폼 초기화(비우기) 버튼
+    btnResetForm.addEventListener("click", () => {
+        if (confirm("입력창의 모든 내용을 지우시겠습니까?")) {
+            nameInput.value = "";
+            jobTitleInput.value = "";
+            experienceInput.value = "";
+            projectsInput.value = "";
+            toneSelect.selectedIndex = 0;
+            const defaultRadio = document.querySelector('input[name="prompt_type"][value="B"]');
+            if (defaultRadio) defaultRadio.checked = true;
+            dualGenCheckbox.checked = false;
+
+            try {
+                localStorage.removeItem("resume_builder_draft");
+            } catch (e) {}
+
+            nameInput.focus();
+        }
+    });
+
+    // 5. 마크다운 변환 렌더링 함수
     function renderMarkdown(mdText) {
         if (window.marked && typeof window.marked.parse === "function") {
             return window.marked.parse(mdText);
@@ -81,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/\n$/gim, '<br>');
     }
 
-    // 4. 우측 패널 모드 제어 (placeholder | loading | single | compare)
+    // 6. 우측 패널 모드 제어 (placeholder | loading | single | compare)
     function setPanelDisplayMode(mode) {
         placeholderBox.classList.add("hidden");
         loadingBox.classList.add("hidden");
@@ -121,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
             statusPill.classList.add("completed");
             statusPill.textContent = "비교 모드";
             versionTabsContainer.classList.remove("hidden");
-            viewTabs.classList.add("hidden"); // 비교 모드에선 각각 복사 지원
+            viewTabs.classList.add("hidden");
             copyBtn.disabled = true;
             downloadBtn.disabled = true;
             btnCompareView.classList.add("active");
@@ -129,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 5. 단일 뷰 내 서식 문서 vs 마크다운 탭 전환
+    // 7. 단일 뷰 내 서식 문서 vs 마크다운 탭 전환
     function switchSingleView(type) {
         if (type === "preview") {
             tabPreview.classList.add("active");
@@ -147,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tabPreview.addEventListener("click", () => switchSingleView("preview"));
     tabRaw.addEventListener("click", () => switchSingleView("raw"));
 
-    // 6. 버전 탭 렌더링 및 선택 로직
+    // 8. 버전 탭 렌더링 및 선택 로직
     function updateVersionUI() {
         if (savedVersions.length === 0) {
             setPanelDisplayMode("placeholder");
@@ -166,7 +323,6 @@ document.addEventListener("DOMContentLoaded", () => {
             versionPills.appendChild(btn);
         });
 
-        // 2개 이상의 버전이 있을 때만 [나란히 비교] 버튼 활성화
         if (savedVersions.length >= 2) {
             btnCompareView.classList.remove("hidden");
         } else {
@@ -174,7 +330,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 특정 버전 보기 선택
     function selectVersion(index) {
         if (index < 0 || index >= savedVersions.length) return;
         currentVersionIndex = index;
@@ -188,11 +343,9 @@ document.addEventListener("DOMContentLoaded", () => {
         updateVersionUI();
     }
 
-    // 좌우 나란히 비교 뷰 실행
     function openComparisonView() {
         if (savedVersions.length < 2) return;
 
-        // 가장 최근 2개의 버전을 비교 (예: 버전 A vs 버전 B)
         const ver1 = savedVersions[savedVersions.length - 2];
         const ver2 = savedVersions[savedVersions.length - 1];
 
@@ -212,14 +365,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnCompareView.addEventListener("click", () => {
         if (isCompareMode) {
-            // 비교 모드에서 다시 최신 단일 뷰로 복귀
             selectVersion(savedVersions.length - 1);
         } else {
             openComparisonView();
         }
     });
 
-    // 7. API 호출 헬퍼
+    // 9. API 호출 헬퍼
     async function requestGenerate(payload) {
         const response = await fetch("/generate", {
             method: "POST",
@@ -236,16 +388,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return data.result;
     }
 
-    // 8. 폼 제출 이벤트 (생성 실행)
+    // 10. 폼 제출 이벤트 (생성 실행)
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         hideError();
 
-        const name = document.getElementById("name").value.trim();
-        const jobTitle = document.getElementById("job-title").value.trim();
-        const experience = document.getElementById("experience").value.trim();
-        const projects = document.getElementById("projects").value.trim();
-        const tone = document.getElementById("tone").value;
+        const name = nameInput.value.trim();
+        const jobTitle = jobTitleInput.value.trim();
+        const experience = experienceInput.value.trim();
+        const projects = projectsInput.value.trim();
+        const tone = toneSelect.value;
         const promptType = document.querySelector('input[name="prompt_type"]:checked')?.value || "B";
         const isDual = dualGenCheckbox.checked;
 
@@ -253,6 +405,19 @@ document.addEventListener("DOMContentLoaded", () => {
             showError("모든 필수 입력값(*)을 입력해 주세요.");
             return;
         }
+
+        // [히스토리 저장] 현재 입력한 프로필 정보를 로컬 스토리지 히스토리에 자동 저장
+        const now = new Date();
+        const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        saveProfileHistory({
+            name: name,
+            jobTitle: jobTitle,
+            experience: experience,
+            projects: projects,
+            tone: tone,
+            promptType: promptType,
+            savedAt: timeStr
+        });
 
         setPanelDisplayMode("loading");
         submitBtn.disabled = true;
@@ -267,7 +432,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             if (isDual) {
-                // A/B 두 버전 동시 생성
                 loadingTitle.textContent = "Prompt A & B 두 버전을 동시 생성하고 있습니다";
                 loadingDesc.textContent = "표준형과 STAR 전문가형 이력서를 동시에 완성하여 나란히 비교창을 띄웁니다...";
                 submitBtn.querySelector(".btn-text").textContent = "두 버전을 동시 작성 중...";
@@ -277,7 +441,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     requestGenerate({ ...basePayload, prompt_type: "B" })
                 ]);
 
-                // 저장소에 둘 다 추가
                 savedVersions.push({
                     id: savedVersions.length + 1,
                     title: `버전 ${savedVersions.length + 1}`,
@@ -296,11 +459,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     name: name
                 });
 
-                // 바로 좌우 나란히 비교 뷰 띄우기
                 openComparisonView();
 
             } else {
-                // 단일 생성
                 loadingTitle.textContent = "Gemini AI가 이력서를 작성하고 있습니다";
                 loadingDesc.textContent = "지원 직무에 최적화된 역량 키워드를 분석하여 문장을 다듬는 중입니다...";
                 submitBtn.querySelector(".btn-text").textContent = "AI가 작성하고 있습니다...";
@@ -317,7 +478,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     name: name
                 });
 
-                // 최신 생성 버전 표시
                 selectVersion(savedVersions.length - 1);
             }
 
@@ -335,7 +495,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 9. 복사 및 다운로드 공통 헬퍼
+    // 11. 복사 및 다운로드 공통 헬퍼
     async function copyText(text, btnElement) {
         if (!text) return;
         try {
@@ -350,14 +510,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 메인 복사 버튼 (단일 뷰일 때)
     copyBtn.addEventListener("click", () => {
         if (currentVersionIndex >= 0 && savedVersions[currentVersionIndex]) {
             copyText(savedVersions[currentVersionIndex].text, copyBtn);
         }
     });
 
-    // 메인 다운로드 버튼 (단일 뷰일 때)
     downloadBtn.addEventListener("click", () => {
         if (currentVersionIndex < 0 || !savedVersions[currentVersionIndex]) return;
         const ver = savedVersions[currentVersionIndex];
@@ -374,7 +532,6 @@ document.addEventListener("DOMContentLoaded", () => {
         URL.revokeObjectURL(downloadUrl);
     });
 
-    // 비교 뷰 내부 컬럼 복사 버튼
     copyCol1Btn.addEventListener("click", () => {
         if (savedVersions.length >= 2) {
             copyText(savedVersions[savedVersions.length - 2].text, copyCol1Btn);
@@ -386,4 +543,8 @@ document.addEventListener("DOMContentLoaded", () => {
             copyText(savedVersions[savedVersions.length - 1].text, copyCol2Btn);
         }
     });
+
+    // 12. 초기화 실행 (임시 저장 복원 및 이전 기록 드롭다운 채우기)
+    restoreDraftFromStorage();
+    updateProfilesDropdown();
 });

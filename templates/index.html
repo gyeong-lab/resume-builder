@@ -50,8 +50,17 @@
             <!-- [좌측 패널] 정보 입력 폼 -->
             <section class="card left-card">
                 <div class="card-header">
-                    <h2>📝 지원자 정보 입력</h2>
-                    <span class="step-indicator">Step 1 ~ 2</span>
+                    <div class="header-left-group">
+                        <h2>📝 지원자 정보 입력</h2>
+                        <span class="step-indicator">Step 1 ~ 2</span>
+                    </div>
+                    <!-- [신규] 이전 작성 기록 불러오기 & 초기화 -->
+                    <div class="history-controls">
+                        <select id="saved-profiles-select" class="history-dropdown" title="이전에 작성했던 기록을 선택하면 자동으로 채워집니다">
+                            <option value="">📂 이전 작성 기록 불러오기...</option>
+                        </select>
+                        <button type="button" id="btn-reset-form" class="btn btn-tiny" title="입력 내용 비우기">🔄 비우기</button>
+                    </div>
                 </div>
 
                 <form id="resume-form" class="form-body">
