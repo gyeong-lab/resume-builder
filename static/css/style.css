@@ -30,35 +30,65 @@ body {
     margin: 0 auto;
 }
 
-/* 3. [헤더] 프리미엄 히어로 배너 (화사한 글래스모피즘 & 그라데이션) */
+/* 3. [헤더] 프리미엄 로열 갤럭시 히어로 배너 (선명하고 깊이감 있는 비비드 컬러) */
 .app-header {
     text-align: center;
     margin-bottom: 26px;
-    padding: 38px 24px 30px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 244, 255, 0.90) 50%, rgba(253, 242, 248, 0.90) 100%);
-    border-radius: 22px;
-    border: 1.5px solid rgba(199, 210, 254, 0.6);
+    padding: 44px 28px 36px;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4338ca 65%, #6366f1 100%);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
     box-shadow: 
-        0 14px 36px -10px rgba(99, 102, 241, 0.15),
-        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+        0 20px 45px -10px rgba(67, 56, 202, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.15) inset;
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(12px);
+}
+
+/* 앰비언트 글로우 장식 오브젝트 (빛 번짐 효과) */
+.app-header::before {
+    content: "";
+    position: absolute;
+    top: -70px;
+    right: -50px;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.45) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.app-header::after {
+    content: "";
+    position: absolute;
+    bottom: -60px;
+    left: -40px;
+    width: 240px;
+    height: 240px;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.40) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.header-hero {
+    position: relative;
+    z-index: 1;
 }
 
 .brand-badge {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 16px;
-    background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
-    border: 1px solid #c7d2fe;
+    padding: 7px 18px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.32);
     border-radius: 9999px;
     font-size: 13px;
     font-weight: 700;
-    color: #4338ca;
-    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.15);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
     margin-bottom: 14px;
+    backdrop-filter: blur(10px);
 }
 
 .badge-sparkle {
@@ -68,57 +98,59 @@ body {
 .badge-status-dot {
     width: 8px;
     height: 8px;
-    background-color: #10b981;
+    background-color: #34d399;
     border-radius: 50%;
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.4);
     animation: livePulse 2s infinite;
 }
 
 @keyframes livePulse {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.8); }
+    70% { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
 }
 
 .badge-status {
     font-size: 12px;
-    color: #047857;
+    color: #6ee7b7;
     font-weight: 800;
 }
 
-/* 메인 타이틀: 3색 선명한 그라데이션 */
+/* 메인 타이틀: 퓨어 화이트 & 네온 펄 그라데이션 */
 .hero-title {
-    font-size: 38px;
+    font-size: 40px;
     font-weight: 900;
     letter-spacing: -0.04em;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     line-height: 1.25;
 }
 
 .title-plain {
-    color: #0f172a;
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
 .title-gradient {
-    background: linear-gradient(135deg, #4f46e5 0%, #9333ea 45%, #06b6d4 100%);
+    background: linear-gradient(135deg, #67e8f9 0%, #a5f3fc 45%, #f472b6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: inline-block;
-    filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2));
+    filter: drop-shadow(0 2px 14px rgba(103, 232, 249, 0.5));
 }
 
-/* 서브타이틀 */
+/* 서브타이틀: 소프트 라벤더 화이트 */
 .hero-subtitle {
-    font-size: 15px;
-    color: #475569;
-    max-width: 680px;
-    margin: 0 auto 20px;
-    line-height: 1.65;
+    font-size: 15.5px;
+    color: #e0e7ff;
+    max-width: 700px;
+    margin: 0 auto 22px;
+    line-height: 1.7;
 }
 
 .hero-subtitle strong {
-    color: #4338ca;
-    font-weight: 700;
+    color: #ffffff;
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
 }
 
 @media (max-width: 768px) {
@@ -126,7 +158,7 @@ body {
     .hero-title { font-size: 28px; }
 }
 
-/* 주요 기능 퀵 칩스 */
+/* 주요 기능 퀵 칩스: 세련된 반투명 글래스 칩 */
 .hero-chips {
     display: flex;
     justify-content: center;
@@ -137,21 +169,22 @@ body {
 
 .chip {
     font-size: 12.5px;
-    font-weight: 600;
-    color: #334155;
-    background: #ffffff;
-    border: 1.5px solid #e2e8f0;
+    font-weight: 700;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     padding: 6px 14px;
     border-radius: 9999px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(8px);
     transition: all 0.2s ease;
 }
 
 .chip:hover {
-    border-color: #818cf8;
-    color: #4338ca;
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.5);
     transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.12);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* 4. 메인 2단 분할 레이아웃 (Grid) */
