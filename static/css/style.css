@@ -950,3 +950,128 @@ pre.raw-markdown {
     font-size: 12.5px;
     color: #94a3b8;
 }
+
+/* ==========================================================
+   13. [모바일 완벽 연동] 스마트폰 전용 반응형 & 터치 최적화
+   ========================================================== */
+@media (max-width: 768px) {
+    body {
+        padding: 12px 8px;
+    }
+
+    .app-header {
+        padding: 26px 16px 20px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+
+    .hero-title {
+        font-size: 24px;
+        letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+        font-size: 13.5px;
+        margin-bottom: 14px;
+        line-height: 1.55;
+    }
+
+    .hero-chips {
+        gap: 6px;
+    }
+
+    .chip {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+
+    /* 카드 여백 및 폼 터치 최적화 */
+    .card {
+        border-radius: 16px;
+    }
+
+    .left-card .card-header,
+    .right-card .card-header {
+        padding: 12px 16px;
+    }
+
+    .card-header h2 {
+        font-size: 16px;
+    }
+
+    .form-body {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    /* iOS 사파리 자동 화면 줌 방지 (16px 이상) & 터치 영역 확보 */
+    input[type="text"],
+    textarea,
+    select {
+        font-size: 16px !important;
+        padding: 12px 14px;
+        border-radius: 10px;
+    }
+
+    .btn-primary {
+        padding: 14px;
+        font-size: 15px;
+        min-height: 48px;
+    }
+
+    /* 우측 패널 모바일 스크롤 최적화 */
+    .right-card {
+        min-height: auto;
+    }
+
+    .result-display,
+    .compare-display {
+        padding: 16px 14px;
+        max-height: 520px;
+    }
+
+    .markdown-body {
+        font-size: 14px;
+        line-height: 1.75;
+    }
+
+    .markdown-body h1 {
+        font-size: 18px;
+    }
+
+    .markdown-body h2 {
+        font-size: 15px;
+    }
+
+    /* A/B 비교 뷰 모바일 1열 자동 전환 */
+    .compare-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .compare-col-body {
+        max-height: 400px;
+        padding: 14px;
+    }
+
+    .version-tabs-group {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-header {
+        padding: 20px 12px 16px;
+    }
+
+    .hero-title {
+        font-size: 21px;
+    }
+
+    .brand-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+}

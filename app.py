@@ -156,7 +156,9 @@ def generate():
             "error": f"서버 처리 중 오류가 발생했습니다: {str(e)}"
         }), 500
 
-# 7. 서버 실행 진입점
+# 7. 서버 실행 진입점 (0.0.0.0으로 열어 모바일 스마트폰 접속 지원)
 if __name__ == "__main__":
-    logger.info("Flask 서버를 시작합니다. http://127.0.0.1:5000 에 접속하세요.")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    logger.info("Flask 서버를 시작합니다.")
+    logger.info("👉 PC 접속:     http://127.0.0.1:5000")
+    logger.info("📱 모바일 접속: http://10.211.5.31:5000")
+    app.run(host="0.0.0.0", port=5000, debug=True)
