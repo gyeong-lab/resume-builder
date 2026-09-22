@@ -655,13 +655,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 9. API 호출 헬퍼
     async function requestGenerate(payload) {
-        const response = await fetch("/generate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        });
+        let response = null;
+        try {
+            response = await fetch("/generate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+        } catch (netErr) {
+            throw new Error("네트워크 연결 오류가 발생했습니다. 인터넷 연결 상태를 확인해 주세요.");
+        }
+
+        // 만약 /generate에서 404/405가 반환될 경우 /api/generate로 한 번 더 폴백 시도
+        if (response.status === 404 || response.status === 405) {
+            try {
+                const fallbackResponse = await fetch("/api/generate", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (fallbackResponse.ok || fallbackResponse.status === 500) {
+                    response = fallbackResponse;
+                }
+            } catch (e) {
+                // 폴백 실패 시 원래 response 유지
+            }
+        }
+
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+            const errorHtml = await response.text();
+            console.error("서버 비정상 응답 (Status " + response.status + "):", errorHtml);
+            if (response.status === 504) {
+                throw new Error("AI 응답 시간이 초과되었습니다 (504 Gateway Timeout). 생성 모드를 단일 모드로 변경하거나 내용을 조금 간결히 하여 다시 시도해 주세요.");
+            } else if (response.status === 500) {
+                throw new Error("서버 내부 오류(500)가 발생했습니다. Vercel 설정(Environment Variables)에 GEMINI_API_KEY가 올바르게 등록되어 있는지 확인해 주세요.");
+            } else {
+                throw new Error(`서버에서 올바르지 않은 응답(HTTP ${response.status})을 반환했습니다. 잠시 후 다시 시도해 주세요.`);
+            }
+        }
 
         const data = await response.json();
         if (!response.ok || !data.success) {

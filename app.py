@@ -46,12 +46,14 @@ def manifest():
     return app.send_static_file("manifest.json")
 
 # 6. 메인 홈 화면 라우트
-@app.route("/")
-@app.route("/api")
-@app.route("/api/")
-@app.route("/api/index")
-@app.route("/api/index.py")
+@app.route("/", methods=["GET", "POST"])
+@app.route("/api", methods=["GET", "POST"])
+@app.route("/api/", methods=["GET", "POST"])
+@app.route("/api/index", methods=["GET", "POST"])
+@app.route("/api/index.py", methods=["GET", "POST"])
 def index():
+    if request.method == "POST":
+        return generate()
     return render_template("index.html")
 
 # 7. 이력서 및 포트폴리오 생성 API 라우트
