@@ -23,7 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 이전 작성 기록 제어 요소
     const savedProfilesSelect = document.getElementById("saved-profiles-select");
+    const btnDeleteProfile = document.getElementById("btn-delete-profile");
     const btnResetForm = document.getElementById("btn-reset-form");
+    const saveHistoryToggle = document.getElementById("save-history-toggle");
 
     // 우측 패널 상태 요소
     const statusPill = document.getElementById("status-pill");
@@ -66,10 +68,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const copyBtn = document.getElementById("copy-btn");
     const downloadBtn = document.getElementById("download-btn");
 
+    // 좌우 넘김 네비게이션 및 섹션 페이지 제어 요소
+    const btnPrevVersionHeader = document.getElementById("btn-prev-version-header");
+    const btnNextVersionHeader = document.getElementById("btn-next-version-header");
+    const btnPrevVersion = document.getElementById("btn-prev-version");
+    const btnNextVersion = document.getElementById("btn-next-version");
+    const versionCounterBadge = document.getElementById("version-counter-badge");
+    const sectionNavGroup = document.getElementById("section-nav-group");
+    const secPills = document.querySelectorAll(".sec-pill");
+    const btnPrevSection = document.getElementById("btn-prev-section");
+    const btnNextSection = document.getElementById("btn-next-section");
+
+    // 나란히 비교 이력서 선택 드롭다운 및 비교 뷰 모드
+    const compareSelect1 = document.getElementById("compare-select-1");
+    const compareSelect2 = document.getElementById("compare-select-2");
+    const btnComparePreview = document.getElementById("btn-compare-preview");
+    const btnCompareRaw = document.getElementById("btn-compare-raw");
+    const col1Raw = document.getElementById("col1-raw");
+    const col2Raw = document.getElementById("col2-raw");
+
+    // 툴바 내 뷰 모드 전환 버튼 (서식 문서 vs 마크다운)
+    const btnViewPreview = document.getElementById("btn-view-preview");
+    const btnViewRaw = document.getElementById("btn-view-raw");
+
     // 생성된 버전 기록 보관 배열 [{ id, title, badge, type, time, text, name }]
     let savedVersions = [];
     let currentVersionIndex = -1;
     let isCompareMode = false;
+    let currentSectionMode = "all"; // "all" | "resume" | "portfolio"
+    let currentDisplayMode = "preview"; // "preview" | "raw"
+    let compareDisplayMode = "preview"; // "preview" | "raw"
 
     // 2. 오류 메시지 헬퍼
     function showError(message) {
@@ -151,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 중복 검사 (이름과 직무가 같으면 기존 것 제거 후 최신으로 등록)
             profiles = profiles.filter(p => !(p.name === profile.name && p.jobTitle === profile.jobTitle));
             profiles.unshift(profile); // 최신 것을 맨 앞으로
-            if (profiles.length > 10) profiles = profiles.slice(0, 10); // 최대 10개 보관
+            if (profiles.length > 5) profiles = profiles.slice(0, 5); // 과도한 누적 방지 (최대 5개 보관)
             localStorage.setItem("resume_builder_profiles", JSON.stringify(profiles));
             updateProfilesDropdown();
         } catch (e) {
@@ -197,7 +225,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         saveDraftToStorage(); // 불러온 내용도 임시 저장에 동기화
-        savedProfilesSelect.value = ""; // 드롭다운 기본값으로 리셋
 
         // 불러오기 완료 피드백
         const originalText = btnResetForm.textContent;
@@ -206,6 +233,44 @@ document.addEventListener("DOMContentLoaded", () => {
             btnResetForm.textContent = originalText;
         }, 1500);
     });
+
+    // 🌟 [기능 추가] 이전 작성 기록 삭제 (선택 기록 삭제 or 전체 삭제) 🌟
+    if (btnDeleteProfile) {
+        btnDeleteProfile.addEventListener("click", () => {
+            const profiles = getStoredProfiles();
+            if (profiles.length === 0) {
+                alert("삭제할 저장된 작성 기록이 없습니다.");
+                return;
+            }
+
+            const selectedVal = savedProfilesSelect.value;
+            if (selectedVal !== "") {
+                const idx = parseInt(selectedVal, 10);
+                const target = profiles[idx];
+                const label = target ? `"${target.name} (${target.jobTitle})"` : "선택한";
+                if (confirm(`${label} 작성 기록을 삭제하시겠습니까?`)) {
+                    profiles.splice(idx, 1);
+                    localStorage.setItem("resume_builder_profiles", JSON.stringify(profiles));
+                    updateProfilesDropdown();
+                    savedProfilesSelect.value = "";
+
+                    const orig = btnDeleteProfile.textContent;
+                    btnDeleteProfile.textContent = "✅ 삭제됨";
+                    setTimeout(() => { btnDeleteProfile.textContent = orig; }, 1500);
+                }
+            } else {
+                if (confirm(`저장된 모든 작성 기록(${profiles.length}개)을 전부 삭제하시겠습니까?`)) {
+                    localStorage.removeItem("resume_builder_profiles");
+                    updateProfilesDropdown();
+                    savedProfilesSelect.value = "";
+
+                    const orig = btnDeleteProfile.textContent;
+                    btnDeleteProfile.textContent = "✅ 전체 삭제됨";
+                    setTimeout(() => { btnDeleteProfile.textContent = orig; }, 1500);
+                }
+            }
+        });
+    }
 
     // 폼 초기화(비우기) 버튼
     btnResetForm.addEventListener("click", () => {
@@ -218,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const defaultRadio = document.querySelector('input[name="prompt_type"][value="B"]');
             if (defaultRadio) defaultRadio.checked = true;
             dualGenCheckbox.checked = false;
+            savedProfilesSelect.value = "";
 
             try {
                 localStorage.removeItem("resume_builder_draft");
@@ -293,25 +359,91 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 7. 단일 뷰 내 서식 문서 vs 마크다운 탭 전환
+    // 7. 단일 뷰 및 비교 뷰 내 서식 문서 vs 마크다운 탭 전환
     function switchSingleView(type) {
+        currentDisplayMode = type;
         if (type === "preview") {
-            tabPreview.classList.add("active");
-            tabRaw.classList.remove("active");
+            if (tabPreview) tabPreview.classList.add("active");
+            if (tabRaw) tabRaw.classList.remove("active");
+            if (btnViewPreview) btnViewPreview.classList.add("active");
+            if (btnViewRaw) btnViewRaw.classList.remove("active");
             renderedContent.classList.remove("hidden");
             rawContent.classList.add("hidden");
         } else {
-            tabRaw.classList.add("active");
-            tabPreview.classList.remove("active");
+            if (tabRaw) tabRaw.classList.add("active");
+            if (tabPreview) tabPreview.classList.remove("active");
+            if (btnViewRaw) btnViewRaw.classList.add("active");
+            if (btnViewPreview) btnViewPreview.classList.remove("active");
             rawContent.classList.remove("hidden");
             renderedContent.classList.add("hidden");
         }
     }
 
-    tabPreview.addEventListener("click", () => switchSingleView("preview"));
-    tabRaw.addEventListener("click", () => switchSingleView("raw"));
+    if (tabPreview) tabPreview.addEventListener("click", () => switchSingleView("preview"));
+    if (tabRaw) tabRaw.addEventListener("click", () => switchSingleView("raw"));
+    if (btnViewPreview) btnViewPreview.addEventListener("click", () => switchSingleView("preview"));
+    if (btnViewRaw) btnViewRaw.addEventListener("click", () => switchSingleView("raw"));
 
-    // 8. 버전 탭 렌더링 및 선택 로직
+    function switchCompareView(type) {
+        compareDisplayMode = type;
+        if (type === "preview") {
+            if (btnComparePreview) btnComparePreview.classList.add("active");
+            if (btnCompareRaw) btnCompareRaw.classList.remove("active");
+            if (col1Content) col1Content.classList.remove("hidden");
+            if (col2Content) col2Content.classList.remove("hidden");
+            if (col1Raw) col1Raw.classList.add("hidden");
+            if (col2Raw) col2Raw.classList.add("hidden");
+        } else {
+            if (btnCompareRaw) btnCompareRaw.classList.add("active");
+            if (btnComparePreview) btnComparePreview.classList.remove("active");
+            if (col1Content) col1Content.classList.add("hidden");
+            if (col2Content) col2Content.classList.add("hidden");
+            if (col1Raw) col1Raw.classList.remove("hidden");
+            if (col2Raw) col2Raw.classList.remove("hidden");
+        }
+    }
+
+    if (btnComparePreview) btnComparePreview.addEventListener("click", () => switchCompareView("preview"));
+    if (btnCompareRaw) btnCompareRaw.addEventListener("click", () => switchCompareView("raw"));
+
+    // 8. 긴 생성 결과 섹션 분할 함수 (이력서 ↔ 포트폴리오 가로 넘기기 지원)
+    function splitResumeSections(text) {
+        if (!text) return { all: "", resume: "", portfolio: "" };
+
+        // 포트폴리오 섹션 시작 헤더 정규식 탐색
+        const portfolioRegex = /(?:^|\n)(?:#{1,3}\s*(?:2[.\s]|\[?포트폴리오\]?|Portfolio).*)/i;
+        const portMatch = text.match(portfolioRegex);
+
+        if (portMatch && portMatch.index !== undefined && portMatch.index > 0) {
+            const portIndex = portMatch.index;
+            const resumePart = text.substring(0, portIndex).trim();
+            const portfolioPart = text.substring(portIndex).trim();
+            return {
+                all: text,
+                resume: resumePart,
+                portfolio: portfolioPart
+            };
+        }
+
+        return { all: text, resume: "", portfolio: "" };
+    }
+
+    function updateSectionPillsUI() {
+        secPills.forEach(pill => {
+            if (pill.dataset.section === currentSectionMode) {
+                pill.classList.add("active");
+            } else {
+                pill.classList.remove("active");
+            }
+        });
+
+        if (btnPrevSection && btnNextSection) {
+            btnPrevSection.disabled = (currentSectionMode === "all" || currentSectionMode === "resume");
+            btnNextSection.disabled = (currentSectionMode === "portfolio");
+        }
+    }
+
+    // 9. 버전 탭 및 좌우 넘김 UI 갱신 로직
     function updateVersionUI() {
         if (savedVersions.length === 0) {
             setPanelDisplayMode("placeholder");
@@ -335,39 +467,182 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             btnCompareView.classList.add("hidden");
         }
+
+        // 좌우 넘김 버튼 활성화/비활성화 상태
+        const isFirst = (currentVersionIndex <= 0);
+        const isLast = (currentVersionIndex >= savedVersions.length - 1);
+
+        if (btnPrevVersion) btnPrevVersion.disabled = isFirst;
+        if (btnNextVersion) btnNextVersion.disabled = isLast;
+        if (btnPrevVersionHeader) btnPrevVersionHeader.disabled = isFirst;
+        if (btnNextVersionHeader) btnNextVersionHeader.disabled = isLast;
+
+        if (versionCounterBadge) {
+            versionCounterBadge.textContent = savedVersions.length > 0
+                ? `이력서 ${currentVersionIndex + 1} / ${savedVersions.length}`
+                : "이력서 0 / 0";
+        }
     }
 
-    function selectVersion(index) {
+    function selectVersion(index, sectionMode) {
         if (index < 0 || index >= savedVersions.length) return;
         currentVersionIndex = index;
+        if (sectionMode) currentSectionMode = sectionMode;
         const ver = savedVersions[index];
 
-        renderedContent.innerHTML = renderMarkdown(ver.text);
-        rawContent.textContent = ver.text;
+        const sections = splitResumeSections(ver.text);
+
+        // 이력서와 포트폴리오 섹션이 모두 존재할 경우 섹션 네비게이터 노출
+        if (sections.portfolio && sections.resume) {
+            if (sectionNavGroup) sectionNavGroup.classList.remove("hidden");
+            updateSectionPillsUI();
+        } else {
+            if (sectionNavGroup) sectionNavGroup.classList.add("hidden");
+            currentSectionMode = "all";
+        }
+
+        let textToDisplay = ver.text;
+        if (currentSectionMode === "resume" && sections.resume) {
+            textToDisplay = sections.resume;
+        } else if (currentSectionMode === "portfolio" && sections.portfolio) {
+            textToDisplay = sections.portfolio;
+        }
+
+        renderedContent.innerHTML = renderMarkdown(textToDisplay);
+        rawContent.textContent = textToDisplay;
+
+        // 화면 상단으로 스크롤 이동
+        resultCard.scrollTop = 0;
 
         setPanelDisplayMode("single");
-        switchSingleView("preview");
+        switchSingleView(currentDisplayMode);
         updateVersionUI();
+    }
+
+    // 결과물(버전) 좌우 넘기기 함수
+    function navigateVersion(direction) {
+        if (isCompareMode) {
+            selectVersion(direction > 0 ? savedVersions.length - 1 : 0);
+            return;
+        }
+        const newIndex = currentVersionIndex + direction;
+        if (newIndex >= 0 && newIndex < savedVersions.length) {
+            selectVersion(newIndex, currentSectionMode);
+        }
+    }
+
+    if (btnPrevVersion) btnPrevVersion.addEventListener("click", () => navigateVersion(-1));
+    if (btnNextVersion) btnNextVersion.addEventListener("click", () => navigateVersion(1));
+    if (btnPrevVersionHeader) btnPrevVersionHeader.addEventListener("click", () => navigateVersion(-1));
+    if (btnNextVersionHeader) btnNextVersionHeader.addEventListener("click", () => navigateVersion(1));
+
+    // 섹션 탭 클릭 이벤트 (전체 / 1. 이력서 / 2. 포트폴리오)
+    secPills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            const sec = pill.dataset.section;
+            selectVersion(currentVersionIndex, sec);
+        });
+    });
+
+    if (btnPrevSection) {
+        btnPrevSection.addEventListener("click", () => {
+            if (currentSectionMode === "portfolio") {
+                selectVersion(currentVersionIndex, "resume");
+            } else if (currentSectionMode === "resume") {
+                selectVersion(currentVersionIndex, "all");
+            }
+        });
+    }
+
+    if (btnNextSection) {
+        btnNextSection.addEventListener("click", () => {
+            if (currentSectionMode === "all") {
+                selectVersion(currentVersionIndex, "resume");
+            } else if (currentSectionMode === "resume") {
+                selectVersion(currentVersionIndex, "portfolio");
+            }
+        });
+    }
+
+    // 키보드 좌우 방향키로 이력서 넘기기
+    window.addEventListener("keydown", (e) => {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+        if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") return;
+
+        if (e.key === "ArrowLeft") {
+            navigateVersion(-1);
+        } else if (e.key === "ArrowRight") {
+            navigateVersion(1);
+        }
+    });
+
+    // 🌟 [나란히 비교] 내가 선택한 임의의 2개 이력서로 비교하기 🌟
+    function renderCompareColumn(colNumber, versionIndex) {
+        if (versionIndex < 0 || versionIndex >= savedVersions.length) return;
+        const ver = savedVersions[versionIndex];
+
+        if (colNumber === 1) {
+            col1Badge.textContent = ver.badge;
+            col1Badge.className = `mode-badge ${ver.type === "A" ? "standard" : "expert"}`;
+            col1Content.innerHTML = renderMarkdown(ver.text);
+            if (col1Raw) col1Raw.textContent = ver.text;
+        } else {
+            col2Badge.textContent = ver.badge;
+            col2Badge.className = `mode-badge ${ver.type === "A" ? "standard" : "expert"}`;
+            col2Content.innerHTML = renderMarkdown(ver.text);
+            if (col2Raw) col2Raw.textContent = ver.text;
+        }
+    }
+
+    function populateCompareSelects(leftIdx, rightIdx) {
+        if (!compareSelect1 || !compareSelect2) return;
+
+        compareSelect1.innerHTML = "";
+        compareSelect2.innerHTML = "";
+
+        savedVersions.forEach((ver, idx) => {
+            const opt1 = document.createElement("option");
+            opt1.value = idx;
+            opt1.textContent = `${ver.title}: ${ver.name} (${ver.badge})`;
+            compareSelect1.appendChild(opt1);
+
+            const opt2 = document.createElement("option");
+            opt2.value = idx;
+            opt2.textContent = `${ver.title}: ${ver.name} (${ver.badge})`;
+            compareSelect2.appendChild(opt2);
+        });
+
+        compareSelect1.value = leftIdx;
+        compareSelect2.value = rightIdx;
     }
 
     function openComparisonView() {
         if (savedVersions.length < 2) return;
 
-        const ver1 = savedVersions[savedVersions.length - 2];
-        const ver2 = savedVersions[savedVersions.length - 1];
+        const leftIndex = savedVersions.length - 2;
+        const rightIndex = savedVersions.length - 1;
 
-        col1Title.textContent = ver1.title;
-        col1Badge.textContent = ver1.badge;
-        col1Badge.className = `mode-badge ${ver1.type === "A" ? "standard" : "expert"}`;
-        col1Content.innerHTML = renderMarkdown(ver1.text);
-
-        col2Title.textContent = ver2.title;
-        col2Badge.textContent = ver2.badge;
-        col2Badge.className = `mode-badge ${ver2.type === "A" ? "standard" : "expert"}`;
-        col2Content.innerHTML = renderMarkdown(ver2.text);
+        populateCompareSelects(leftIndex, rightIndex);
+        renderCompareColumn(1, leftIndex);
+        renderCompareColumn(2, rightIndex);
 
         setPanelDisplayMode("compare");
+        switchCompareView(compareDisplayMode);
         updateVersionUI();
+    }
+
+    if (compareSelect1) {
+        compareSelect1.addEventListener("change", (e) => {
+            const idx = parseInt(e.target.value, 10);
+            renderCompareColumn(1, idx);
+        });
+    }
+
+    if (compareSelect2) {
+        compareSelect2.addEventListener("change", (e) => {
+            const idx = parseInt(e.target.value, 10);
+            renderCompareColumn(2, idx);
+        });
     }
 
     btnCompareView.addEventListener("click", () => {
@@ -413,18 +688,20 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // [히스토리 저장] 현재 입력한 프로필 정보를 로컬 스토리지 히스토리에 자동 저장
-        const now = new Date();
-        const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        saveProfileHistory({
-            name: name,
-            jobTitle: jobTitle,
-            experience: experience,
-            projects: projects,
-            tone: tone,
-            promptType: promptType,
-            savedAt: timeStr
-        });
+        // [히스토리 저장] 사용자가 체크박스를 선택했을 때만 기록에 보관 (무분별한 자동 누적 방지)
+        if (saveHistoryToggle && saveHistoryToggle.checked) {
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            saveProfileHistory({
+                name: name,
+                jobTitle: jobTitle,
+                experience: experience,
+                projects: projects,
+                tone: tone,
+                promptType: promptType,
+                savedAt: timeStr
+            });
+        }
 
         setPanelDisplayMode("loading");
         submitBtn.disabled = true;
@@ -563,14 +840,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     copyCol1Btn.addEventListener("click", () => {
-        if (savedVersions.length >= 2) {
-            copyText(savedVersions[savedVersions.length - 2].text, copyCol1Btn);
+        const idx = compareSelect1 ? parseInt(compareSelect1.value, 10) : 0;
+        if (savedVersions[idx]) {
+            copyText(savedVersions[idx].text, copyCol1Btn);
         }
     });
 
     copyCol2Btn.addEventListener("click", () => {
-        if (savedVersions.length >= 1) {
-            copyText(savedVersions[savedVersions.length - 1].text, copyCol2Btn);
+        const idx = compareSelect2 ? parseInt(compareSelect2.value, 10) : 1;
+        if (savedVersions[idx]) {
+            copyText(savedVersions[idx].text, copyCol2Btn);
         }
     });
 

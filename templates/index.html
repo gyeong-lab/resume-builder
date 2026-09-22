@@ -60,11 +60,12 @@
                         <h2>📝 지원자 정보 입력</h2>
                         <span class="step-indicator">Step 1 ~ 2</span>
                     </div>
-                    <!-- 이전 작성 기록 불러오기 & 비우기 -->
+                    <!-- 이전 작성 기록 불러오기 & 삭제 & 비우기 -->
                     <div class="history-controls">
                         <select id="saved-profiles-select" class="history-dropdown" title="이전에 작성했던 기록을 선택하면 자동으로 채워집니다">
                             <option value="">📂 이전 작성 기록 불러오기...</option>
                         </select>
+                        <button type="button" id="btn-delete-profile" class="btn btn-tiny btn-danger-soft" title="선택한 기록 또는 전체 작성 기록 삭제">🗑️ 삭제</button>
                         <button type="button" id="btn-reset-form" class="btn btn-tiny" title="입력 내용 비우기">🔄 비우기</button>
                     </div>
                 </div>
@@ -146,6 +147,14 @@
                         </label>
                     </div>
 
+                    <!-- 작성 내용 이전 기록 보관 옵션 (선택 시에만 저장) -->
+                    <div class="save-option-box">
+                        <label class="checkbox-sub-label">
+                            <input type="checkbox" id="save-history-toggle">
+                            <span>💾 이번 작성 내용을 이전 기록에 보관하기</span>
+                        </label>
+                    </div>
+
                     <!-- 생성 버튼 -->
                     <button type="submit" id="submit-btn" class="btn btn-primary">
                         <span class="btn-icon">⚡</span>
@@ -168,9 +177,11 @@
                         <span id="status-pill" class="status-pill ready">대기 중</span>
                     </div>
 
-                    <!-- 버전 선택 탭 & 나란히 비교 버튼 -->
+                    <!-- 버전 선택 탭 & 좌우 넘김 버튼 & 나란히 비교 버튼 -->
                     <div id="version-tabs-container" class="version-tabs-group hidden">
+                        <button type="button" id="btn-prev-version-header" class="nav-arrow-btn-compact" title="이전 이력서 보기 (←)">◀</button>
                         <div class="version-pills" id="version-pills"></div>
+                        <button type="button" id="btn-next-version-header" class="nav-arrow-btn-compact" title="다음 이력서 보기 (→)">▶</button>
                         <button type="button" id="btn-compare-view" class="compare-pill">🔀 나란히 비교</button>
                     </div>
 
@@ -218,35 +229,82 @@
 
                 <!-- 상태 3-1: 단일 결과 뷰 (서식 렌더링 뷰) -->
                 <div id="result-card" class="result-display hidden">
+                    <!-- 상단 좌우 넘김 및 섹션(이력서/포트폴리오) 가로 넘기기 바 -->
+                    <div class="result-navigation-toolbar" id="result-toolbar">
+                        <!-- 이력서 넘기기 (버전 전환) -->
+                        <div class="nav-group version-nav">
+                            <button type="button" id="btn-prev-version" class="btn-nav-arrow" title="이전 생성 결과 보기 (단축키: ←)">
+                                ◀ 이전 이력서
+                            </button>
+                            <span id="version-counter-badge" class="version-counter">결과 1 / 1</span>
+                            <button type="button" id="btn-next-version" class="btn-nav-arrow" title="다음 생성 결과 보기 (단축키: →)">
+                                다음 이력서 ▶
+                            </button>
+                        </div>
+
+                        <!-- 섹션(이력서/포트폴리오) 가로 넘기기 탭 -->
+                        <div class="nav-group section-nav" id="section-nav-group">
+                            <span class="nav-label">📑 구분:</span>
+                            <div class="section-pills">
+                                <button type="button" class="sec-pill active" data-section="all">전체</button>
+                                <button type="button" class="sec-pill" data-section="resume">📄 1. 이력서</button>
+                                <button type="button" class="sec-pill" data-section="portfolio">🚀 2. 포트폴리오</button>
+                            </div>
+                            <div class="sec-arrows">
+                                <button type="button" id="btn-prev-section" class="btn-sec-arrow" title="이전 쪽 보기">‹ 이전 쪽</button>
+                                <button type="button" id="btn-next-section" class="btn-sec-arrow" title="다음 쪽 보기">다음 쪽 ›</button>
+                            </div>
+                        </div>
+                        <!-- 뷰 모드 전환 (서식 문서 vs 마크다운 원본) -->
+                        <div class="nav-group view-mode-group">
+                            <span class="nav-label">보기:</span>
+                            <div class="view-mode-tabs-bar">
+                                <button type="button" class="tab-mode-btn active" id="btn-view-preview">👁️ 서식 문서</button>
+                                <button type="button" class="tab-mode-btn" id="btn-view-raw">📝 마크다운</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="rendered-content" class="markdown-body"></div>
                     <pre id="raw-content" class="raw-markdown hidden"></pre>
                 </div>
 
                 <!-- 상태 3-2: 좌우 나란히 비교 뷰 (Split Compare View) -->
                 <div id="compare-view-card" class="compare-display hidden">
+                    <div class="compare-toolbar-notice">
+                        <span>💡 비교할 이력서를 좌우 드롭다운에서 각각 자유롭게 선택하세요.</span>
+                        <div class="view-mode-tabs-bar compare-view-mode-bar">
+                            <button type="button" class="tab-mode-btn active" id="btn-compare-preview">👁️ 서식 문서</button>
+                            <button type="button" class="tab-mode-btn" id="btn-compare-raw">📝 마크다운</button>
+                        </div>
+                    </div>
                     <div class="compare-grid">
                         <!-- 비교 좌측 열 -->
                         <div class="compare-column">
                             <div class="compare-col-header">
-                                <div class="col-title-badge">
-                                    <strong id="col1-title">버전 A</strong>
+                                <div class="col-selector-group">
+                                    <span class="compare-col-label">좌측:</span>
+                                    <select id="compare-select-1" class="compare-select-dropdown" title="좌측에 표시할 이력서 선택"></select>
                                     <span id="col1-badge" class="mode-badge standard">표준형</span>
                                 </div>
                                 <button type="button" id="copy-col1-btn" class="btn btn-tiny">📋 복사</button>
                             </div>
                             <div class="compare-col-body markdown-body" id="col1-content"></div>
+                            <pre class="raw-markdown compare-raw hidden" id="col1-raw"></pre>
                         </div>
 
                         <!-- 비교 우측 열 -->
                         <div class="compare-column">
                             <div class="compare-col-header">
-                                <div class="col-title-badge">
-                                    <strong id="col2-title">버전 B</strong>
+                                <div class="col-selector-group">
+                                    <span class="compare-col-label">우측:</span>
+                                    <select id="compare-select-2" class="compare-select-dropdown" title="우측에 표시할 이력서 선택"></select>
                                     <span id="col2-badge" class="mode-badge expert">STAR 전문가형</span>
                                 </div>
                                 <button type="button" id="copy-col2-btn" class="btn btn-tiny">📋 복사</button>
                             </div>
                             <div class="compare-col-body markdown-body" id="col2-content"></div>
+                            <pre class="raw-markdown compare-raw hidden" id="col2-raw"></pre>
                         </div>
                     </div>
                 </div>
