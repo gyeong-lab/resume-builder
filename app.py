@@ -33,6 +33,7 @@ else:
 
 # 5. PWA 매니페스트 및 서비스 워커 라우트
 @app.route("/sw.js")
+@app.route("/api/sw.js")
 def service_worker():
     response = app.send_static_file("js/sw.js")
     response.headers["Service-Worker-Allowed"] = "/"
@@ -40,16 +41,22 @@ def service_worker():
     return response
 
 @app.route("/manifest.json")
+@app.route("/api/manifest.json")
 def manifest():
     return app.send_static_file("manifest.json")
 
 # 6. 메인 홈 화면 라우트
 @app.route("/")
+@app.route("/api")
+@app.route("/api/")
+@app.route("/api/index")
+@app.route("/api/index.py")
 def index():
     return render_template("index.html")
 
-# 6. 이력서 및 포트폴리오 생성 API 라우트
+# 7. 이력서 및 포트폴리오 생성 API 라우트
 @app.route("/generate", methods=["POST"])
+@app.route("/api/generate", methods=["POST"])
 def generate():
     try:
         # 클라이언트에서 전송한 JSON 데이터 수신
