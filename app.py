@@ -16,17 +16,34 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 3. Flask 앱 생성
-app = Flask(__name__)
+# 3. Flask 앱 생성 (Vercel Serverless 및 로컬 공통 호환을 위해 절대 경로 지정)
+base_dir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(base_dir, "templates"),
+    static_folder=os.path.join(base_dir, "static")
+)
 
 # 4. Gemini API 클라이언트 초기화
 if not api_key:
-    logger.warning("경고: GEMINI_API_KEY가 .env 파일에 설정되지 않았습니다.")
+    logger.warning("경고: GEMINI_API_KEY가 환경변수에 설정되지 않았습니다.")
     client = None
 else:
     client = genai.Client(api_key=api_key)
 
-# 5. 메인 홈 화면 라우트
+# 5. PWA 매니페스트 및 서비스 워커 라우트
+@app.route("/sw.js")
+def service_worker():
+    response = app.send_static_file("js/sw.js")
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Content-Type"] = "application/javascript"
+    return response
+
+@app.route("/manifest.json")
+def manifest():
+    return app.send_static_file("manifest.json")
+
+# 6. 메인 홈 화면 라우트
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -63,12 +80,18 @@ def generate():
 
         logger.info(f"[요청 수신] 이름: {name}, 지원 직무: {job_title}, 프롬프트 모드: {prompt_type}, 톤: {tone}")
 
-        # API 키 검증
+        # API 키 검증 (Serverless 환경 지연 로딩 지원)
+        global client
         if not client:
-            logger.error("[오류] Gemini API 클라이언트가 초기화되지 않았습니다. .env 파일을 확인하세요.")
+            current_key = os.getenv("GEMINI_API_KEY")
+            if current_key:
+                client = genai.Client(api_key=current_key)
+
+        if not client:
+            logger.error("[오류] Gemini API 클라이언트가 초기화되지 않았습니다. 환경변수(Vercel 또는 .env)를 확인하세요.")
             return jsonify({
                 "success": False,
-                "error": "서버에 Gemini API 키가 설정되지 않았습니다. .env 파일을 확인해 주세요."
+                "error": "서버에 Gemini API 키가 설정되지 않았습니다. 환경변수(Vercel 또는 .env)를 확인해 주세요."
             }), 500
 
         # Prompt 엔지니어링: Prompt A(일반) vs Prompt B(전문가)
