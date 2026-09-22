@@ -983,6 +983,9 @@ function initPwaInstall() {
     const iosModal = document.getElementById("pwa-ios-modal");
     const iosCloseBtn = document.getElementById("pwa-ios-close");
     const iosConfirmBtn = document.getElementById("pwa-ios-confirm");
+    const androidModal = document.getElementById("pwa-android-modal");
+    const androidCloseBtn = document.getElementById("pwa-android-close");
+    const androidConfirmBtn = document.getElementById("pwa-android-confirm");
 
     // 이미 PWA 독립 창(Standalone) 모드로 실행 중인지 확인
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches 
@@ -994,16 +997,21 @@ function initPwaInstall() {
     }
 
     const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/.test(navigator.userAgent);
 
-    // 배너 노출 처리
+    // 설치 배너 및 헤더 버튼 노출 (항상 재설치 가능하도록 상시 노출 지원)
     function showInstallUi() {
-        const isDismissed = sessionStorage.getItem("pwa_banner_dismissed") === "true";
-        if (!isDismissed && installBanner) {
+        if (installBanner) {
             installBanner.style.display = "block";
         }
         if (headerBtn) {
             headerBtn.style.display = "inline-flex";
         }
+    }
+
+    // 초기 진입 시 헤더 설치 버튼은 항상 활성화
+    if (headerBtn) {
+        headerBtn.style.display = "inline-flex";
     }
 
     // Chrome, Edge, Android PWA 설치 이벤트 감지
@@ -1014,12 +1022,12 @@ function initPwaInstall() {
         showInstallUi();
     });
 
-    // 사이트 진입 후 1.2초 뒤 사용자에게 친절하게 배너 안내 노출
+    // 사이트 진입 후 0.8초 뒤 배너 활성화
     setTimeout(() => {
         if (!isStandalone) {
             showInstallUi();
         }
-    }, 1200);
+    }, 800);
 
     // 설치 트리거 실행
     async function triggerInstall() {
@@ -1028,15 +1036,20 @@ function initPwaInstall() {
             const choiceResult = await deferredInstallPrompt.userChoice;
             console.log("사용자 설치 응답:", choiceResult.outcome);
             if (choiceResult.outcome === "accepted") {
-                if (installBanner) installBanner.style.display = "none";
-                if (headerBtn) headerBtn.style.display = "none";
                 showPwaToast("🎉 AI Resume Builder 앱이 설치되었습니다!");
             }
             deferredInstallPrompt = null;
         } else if (isIos) {
             if (iosModal) iosModal.style.display = "flex";
+        } else if (isAndroid) {
+            // 안드로이드에서 브라우저가 자동 팝업을 거절하거나 재설치하려는 경우 안내 모달 띄우기
+            if (androidModal) {
+                androidModal.style.display = "flex";
+            } else {
+                showPwaToast("💡 Chrome 우측 상단 [점 3개 ⋮] ➔ [앱 설치]를 눌러 다시 설치해 주세요.");
+            }
         } else {
-            showPwaToast("💡 브라우저 주소창 우측의 [설치(💻)] 아이콘을 클릭하여 설치하실 수도 있습니다.");
+            showPwaToast("💡 브라우저 주소창 우측의 [설치(💻)] 아이콘 또는 메뉴에서 설치하실 수 있습니다.");
         }
     }
 
@@ -1050,10 +1063,10 @@ function initPwaInstall() {
     if (closeBtn) {
         closeBtn.addEventListener("click", () => {
             if (installBanner) installBanner.style.display = "none";
-            sessionStorage.setItem("pwa_banner_dismissed", "true");
         });
     }
 
+    // iOS 모달 닫기
     if (iosCloseBtn) {
         iosCloseBtn.addEventListener("click", () => {
             if (iosModal) iosModal.style.display = "none";
@@ -1065,10 +1078,20 @@ function initPwaInstall() {
         });
     }
 
+    // Android 모달 닫기
+    if (androidCloseBtn) {
+        androidCloseBtn.addEventListener("click", () => {
+            if (androidModal) androidModal.style.display = "none";
+        });
+    }
+    if (androidConfirmBtn) {
+        androidConfirmBtn.addEventListener("click", () => {
+            if (androidModal) androidModal.style.display = "none";
+        });
+    }
+
     window.addEventListener("appinstalled", () => {
         console.log("PWA 설치 완료 감지됨");
-        if (installBanner) installBanner.style.display = "none";
-        if (headerBtn) headerBtn.style.display = "none";
         showPwaToast("🎉 AI Resume Builder 앱 설치가 완료되었습니다!");
     });
 }

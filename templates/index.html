@@ -380,6 +380,28 @@
         </div>
     </div>
 
+    <!-- Android 재설치 안내 모달 -->
+    <div id="pwa-android-modal" class="pwa-modal-overlay" style="display: none;">
+        <div class="pwa-modal-box">
+            <div class="pwa-modal-header">
+                <h3>🤖 안드로이드 앱 다시 설치하기</h3>
+                <button type="button" id="pwa-android-close" class="btn-pwa-close" aria-label="닫기">✕</button>
+            </div>
+            <div class="pwa-modal-body">
+                <p class="pwa-ios-intro">'안드로이드 버전에 맞지 않음' 메시지가 뜰 때는 이전 설치 캐시를 정리하고 아래 순서로 다시 설치해 주세요:</p>
+                <ol class="pwa-ios-steps">
+                    <li>홈 화면/앱 목록에 <strong>이전에 설치된 'AI Resume' 앱</strong>이 있다면 먼저 <strong>길게 눌러 [설치 삭제]</strong>를 합니다.</li>
+                    <li>Chrome 브라우저 우측 상단의 <strong>더보기 메뉴(점 3개 ⋮)</strong>를 누릅니다.</li>
+                    <li>메뉴에서 <strong>[앱 설치]</strong> 또는 <strong>[홈 화면에 추가]</strong>를 누르시면 새 버전으로 정상 설치됩니다!</li>
+                    <li style="margin-top: 6px; font-size: 13px; color: #94a3b8;">💡 삼성 인터넷 브라우저의 경우: 하단 [메뉴 ≡] ➔ [현재 페이지 추가] ➔ [홈 화면]을 누르시면 충돌 없이 즉시 설치됩니다.</li>
+                </ol>
+            </div>
+            <div class="pwa-modal-footer">
+                <button type="button" id="pwa-android-confirm" class="btn btn-primary" style="width: 100%; justify-content: center;">확인했습니다</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 스크립트 연결 -->
     <script src="/static/js/app.js"></script>
 </body>
