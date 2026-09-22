@@ -914,4 +914,125 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
         });
     }
+
+    // 15. PWA 설치 배너 및 프롬프트 제어
+    initPwaInstall();
 });
+
+// ==========================================
+// 15. PWA 설치 프롬프트 및 전용 UI 컨트롤러
+// ==========================================
+let deferredInstallPrompt = null;
+
+function showPwaToast(message) {
+    let toast = document.getElementById("pwa-toast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "pwa-toast";
+        toast.className = "pwa-toast-notification";
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add("show");
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3500);
+}
+
+function initPwaInstall() {
+    const installBanner = document.getElementById("pwa-install-banner");
+    const installBtn = document.getElementById("pwa-install-btn");
+    const closeBtn = document.getElementById("pwa-close-btn");
+    const headerBtn = document.getElementById("pwa-header-btn");
+    const iosModal = document.getElementById("pwa-ios-modal");
+    const iosCloseBtn = document.getElementById("pwa-ios-close");
+    const iosConfirmBtn = document.getElementById("pwa-ios-confirm");
+
+    // 이미 PWA 독립 창(Standalone) 모드로 실행 중인지 확인
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches 
+        || window.navigator.standalone === true;
+
+    if (isStandalone) {
+        console.log("PWA가 이미 단독 앱(Standalone) 모드로 실행 중입니다.");
+        return;
+    }
+
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    // 배너 노출 처리
+    function showInstallUi() {
+        const isDismissed = sessionStorage.getItem("pwa_banner_dismissed") === "true";
+        if (!isDismissed && installBanner) {
+            installBanner.style.display = "block";
+        }
+        if (headerBtn) {
+            headerBtn.style.display = "inline-flex";
+        }
+    }
+
+    // Chrome, Edge, Android PWA 설치 이벤트 감지
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        console.log("PWA beforeinstallprompt 이벤트 발생 - 설치 배너 노출");
+        showInstallUi();
+    });
+
+    // 사이트 진입 후 1.2초 뒤 사용자에게 친절하게 배너 안내 노출
+    setTimeout(() => {
+        if (!isStandalone) {
+            showInstallUi();
+        }
+    }, 1200);
+
+    // 설치 트리거 실행
+    async function triggerInstall() {
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            const choiceResult = await deferredInstallPrompt.userChoice;
+            console.log("사용자 설치 응답:", choiceResult.outcome);
+            if (choiceResult.outcome === "accepted") {
+                if (installBanner) installBanner.style.display = "none";
+                if (headerBtn) headerBtn.style.display = "none";
+                showPwaToast("🎉 AI Resume Builder 앱이 설치되었습니다!");
+            }
+            deferredInstallPrompt = null;
+        } else if (isIos) {
+            if (iosModal) iosModal.style.display = "flex";
+        } else {
+            showPwaToast("💡 브라우저 주소창 우측의 [설치(💻)] 아이콘을 클릭하여 설치하실 수도 있습니다.");
+        }
+    }
+
+    if (installBtn) {
+        installBtn.addEventListener("click", triggerInstall);
+    }
+    if (headerBtn) {
+        headerBtn.addEventListener("click", triggerInstall);
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            if (installBanner) installBanner.style.display = "none";
+            sessionStorage.setItem("pwa_banner_dismissed", "true");
+        });
+    }
+
+    if (iosCloseBtn) {
+        iosCloseBtn.addEventListener("click", () => {
+            if (iosModal) iosModal.style.display = "none";
+        });
+    }
+    if (iosConfirmBtn) {
+        iosConfirmBtn.addEventListener("click", () => {
+            if (iosModal) iosModal.style.display = "none";
+        });
+    }
+
+    window.addEventListener("appinstalled", () => {
+        console.log("PWA 설치 완료 감지됨");
+        if (installBanner) installBanner.style.display = "none";
+        if (headerBtn) headerBtn.style.display = "none";
+        showPwaToast("🎉 AI Resume Builder 앱 설치가 완료되었습니다!");
+    });
+}
